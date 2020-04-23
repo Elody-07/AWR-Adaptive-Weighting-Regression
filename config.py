@@ -1,3 +1,10 @@
+JOINT = {
+    'nyu': 14,
+    'icvl': 16,
+    'msra': 21,
+    'hands17': 21,
+    'itop': 15
+}
 class Config(object):
     gpu_id = 1
     phase = 'train' 
@@ -26,10 +33,3 @@ class Config(object):
 
     net = 'resnet_50'
 
-JOINT = {
-    'nyu': 14,
-    'icvl': 16,
-    'msra': 21,
-    'hands17': 21,
-    'itop': 15
-}

@@ -8,7 +8,6 @@ import cv2
 
 # generate dense offsets feature 
 class GFM:
-    def __init__(self):
 
     def joint2offset(self, joint, img, kernel_size, feature_size):
         '''

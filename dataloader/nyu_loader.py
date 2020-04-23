@@ -5,6 +5,7 @@ import torch
 from glob import glob
 
 from loader import Loader
+from util.util import uvd2xyz, xyz2uvd
 from util import *
 
 JOINT = np.array([0,1,3,5,   6,7,9,11,  12,13,15,17,  18,19,21,23,  24,25,27,28,  32,30,31])
@@ -14,14 +15,14 @@ EVAL = [0, 2, 4, 6, 8, 10, 12, 14, 16, 17, 18, 21, 22, 20]
 
 class NYU(Loader):
     
-    def __init__(self, root, phase, val=False, img_size=128, center_type='refine', aug_para=[10, 0.1, 180], cube_size=[300,300,300], joint_num=14):
+    def __init__(self, root, phase, val=False, img_size=128, center_type='refine', aug_para=[10, 0.1, 180], cube=[300,300,300], joint_num=14):
         super(NYU, self).__init__(root, phase, img_size, center_type, 'nyu')
         self.root = root
         self.phase = phase
         self.val = val
 
         self.paras = (588.03, 587.07, 320., 240.)
-        self.cube_size = np.asarray(cube_size)
+        self.cube= np.asarray(cube)
         self.dsize = np.asarray([img_size, img_size])
         self.img_size = img_size
 
@@ -29,8 +30,8 @@ class NYU(Loader):
         self.aug_para = aug_para
 
         self.data = self.make_dataset()
-        self.test_cubesize = np.ones([8252, 3]) * self.cube_size
-        self.test_cubesize[2440:, :] = self.test_cubesize[2440:, :] * 5.0 / 6.0
+        self.test_cube = np.ones([8252, 3]) * self.cube
+        self.test_cube[2440:, :] = self.test_cube[2440:, :] * 5.0 / 6.0
         self.flip = -1 # flip y axis when doing xyz <-> uvd transformation
 
         print("loading dataset, containing %d images." % len(self.data))
@@ -40,31 +41,30 @@ class NYU(Loader):
         jt_xyz = self.data[index][2].copy()
 
         if self.phase == 'test':
-            cube_size = self.test_cubesize[index]
+            cube = self.test_cube[index]
         else:
-            cube_size = self.cube_size
-        
+            cube = self.cube
         center_xyz = self.data[index][3].copy()
         center_uvd = xyz2uvd(center_xyz, self.paras, self.flip)
 
         jt_xyz -= center_xyz
-        img, M = self.crop(img, center_uvd, cube_size, self.dsize)
+        img, M = self.crop(img, center_uvd, cube, self.dsize)
 
         if self.phase == 'train' and self.val== False:
             aug_op, trans, scale, rot = self.random_aug(*self.aug_para)
             print(aug_op)
-            img, jt_xyz, cube_size, center_uvd, M = self.augment(img, jt_xyz, center_uvd, cube_size, M, aug_op, trans, scale, rot)
+            img, jt_xyz, cube, center_uvd, M = self.augment(img, jt_xyz, center_uvd, cube, M, aug_op, trans, scale, rot)
             center_xyz = uvd2xyz(center_uvd, self.paras, self.flip)
         else:
-            img = self.normalize(img.max(), img, center_xyz, cube_size)
+            img = self.normalize(img.max(), img, center_xyz, cube)
 
-        jt_uvd = transformPoints2D(xyz2uvd(jt_xyz + center_xyz, self.paras, self.flip), M)
+        jt_uvd = self.transform_jt_uvd(xyz2uvd(jt_xyz + center_xyz, self.paras, self.flip), M)
         jt_uvd[:, :2] = jt_uvd[:, :2] / (self.img_size / 2.) - 1
-        jt_uvd[:, 2] = (jt_uvd[:, 2] - center_xyz[2]) / (cube_size[2] / 2.0)
+        jt_uvd[:, 2] = (jt_uvd[:, 2] - center_xyz[2]) / (cube[2] / 2.0)
 
-        jt_xyz = (jt_xyz / cube_size[2] / 2.).astype(np.float32)
+        jt_xyz = jt_xyz / (cube / 2.)
 
-        return img[np.newaxis, :], jt_xyz, jt_uvd, center_xyz, M, cube_size
+        return img[np.newaxis, :].astype(np.float32), jt_xyz.astype(np.float32), jt_uvd.astype(np.float32), center_xyz.astype(np.float32), M.astype(np.float32), cube.astype(np.float32)
 
     def __len__(self):
         return len(self.data)
@@ -110,24 +110,32 @@ if __name__ == "__main__":
         return img_
 
     from torch.utils.data import DataLoader
+    from util.eval_tool import EvalUtil
 
     root = 'D:\\Documents\\Data\\nyu'
-    dataset = iter(NYU(root, phase='test'))
+    dataset = NYU(root, phase='train')
+    evaltool = EvalUtil(dataset.img_size, dataset.paras, dataset.flip, dataset.joint_num)
+
+    dataset = iter(dataset)
     for i in range(1, 20):
         data = next(dataset) # 'trans'
         img, j3d_xyz, j3d_uvd, center_xyz, M, cube = data
-        # print(img.dtype, img.shape)
-        # print(j3d_xyz.dtype, j3d_xyz.shape)
-        # print(j3d_uvd.dtype, j3d_uvd.shape)
-        # print(center_xyz.dtype, center_xyz.shape)
-        # print(M.dtype, M.shape)
-        # print(cube.dtype, cube.shape)
-        j3d_uvd = (j3d_uvd + 1) * 64
-        
-        a = draw(img[0], j3d_uvd[:,:2])
-        # a = img[0].numpy()
-        cv2.imwrite("./%d_test.png" % i, (a+1)*100)
+        print(img.dtype, img.shape)
+        print(j3d_xyz.dtype, j3d_xyz.shape)
+        print(j3d_uvd.dtype, j3d_uvd.shape)
+        print(center_xyz.dtype, center_xyz.shape)
+        print(M.dtype, M.shape)
+        print(cube.dtype, cube.shape)
+
+        # j3d_uvd = (j3d_uvd + 1) * 64
+        # a = draw(img[0], j3d_uvd[:,:2])
+        # # a = img[0].numpy()
+        # cv2.imwrite("../debug/test_%d.png" % i, (a+1)*100)
         # print(True)
+
+        evaltool.feed(j3d_uvd, j3d_xyz, center_xyz, M, cube)
+
+    print(evaltool.get_measures())
 
     print('done')
 

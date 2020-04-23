@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F 
 import numpy as np 
 import cv2
-from util import *
+from util.util import uvd2xyz, xyz2uvd
 
 class Loader(Dataset):
 
@@ -254,3 +254,12 @@ class Loader(Dataset):
         pt_rot[:, :2] += center[:2]
 
         return pt_rot.astype(np.float32)
+
+    def transform_jt_uvd(self, jt_uvd, M):
+        pts_trans = np.hstack([jt_uvd[:,:2], np.ones((jt_uvd.shape[0], 1))])
+
+        pts_trans = np.dot(M, pts_trans.T).T
+        pts_trans[:, :2] /= pts_trans[:, 2:]
+
+        return np.hstack([pts_trans[:, :2], jt_uvd[:, 2:]]).astype(np.float32)
+
