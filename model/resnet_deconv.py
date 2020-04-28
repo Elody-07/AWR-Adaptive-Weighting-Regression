@@ -2,7 +2,6 @@ import math
 import torch
 import torch.nn as nn
 
-
 BN_MOMENTUM = 0.1
 
 def get_deconv_net(layers, num_classes, downsample):
@@ -208,17 +207,3 @@ class Bottleneck(nn.Module):
         out = self.relu(out)
 
         return out
-        
-
-
-if __name__ == '__main__':
-    from ptflops import get_model_complexity_info
-
-    batch_size = 32
-    img_size =96 
-    joint_num = 14
-    img = torch.rand([batch_size, 1, img_size, img_size])
-    
-    model = get_deconv_net(50, 14*4, 8)
-    flops, params = get_model_complexity_info(model, (1,img_size,img_size),as_strings=True,print_per_layer_stat=True)
-    output = model(img)

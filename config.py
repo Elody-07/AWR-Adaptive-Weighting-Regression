@@ -3,7 +3,6 @@ JOINT = {
     'icvl': 16,
     'msra': 21,
     'hands17': 21,
-    'itop': 15
 }
 class Config(object):
     gpu_id = 0
@@ -22,7 +21,7 @@ class Config(object):
     batch_size = 8
     num_workers = 0
     max_epoch = 80
-    loss_type = 'MyL1Loss'  # ['L1loss', 'mseloss', 'weighted_L1loss']
+    loss_type = 'MyL1Loss'
     dense_weight = 1.0
     coord_weight = 1000.0
     kernel_size = 1   # for offset

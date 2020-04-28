@@ -1,10 +1,5 @@
-import numpy as np
 import torch
-from numpy import linalg
-from torch.nn import Module, Conv2d, Parameter, Softmax
 import torch.nn.functional as F
-import sys
-import cv2
 
 # generate dense offsets feature 
 class FeatureModule:
@@ -64,35 +59,4 @@ class FeatureModule:
         return jt_uvd.float()
 
 
-
-if __name__ == '__main__':
-    batch_size = 2
-    joint_num = 21
-    cuda_id = 0
-    torch.cuda.set_device(cuda_id)
-    GFM_ = GFM(batch_size, cuda_id, 64, joint_num)
-    # test_data = ren_loader.icvl_loader('/data/users/pfren/data/dataset/hand/icvl', 'test')
-    # test_data = ren_loader.nyu_loader('/data/users/ljs/pfren/dataset/nyu', 'test')
-    test_data = ren_loader.msra_loader('/data/users/ljs/pfren/dataset/msra', 'test',test_persons=[0])
-    from torch.utils.data import DataLoader
-    dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=1)
-    for index, data in enumerate(dataloader):
-        img, img_ori, joint_world, joint_img, center, M, cube, pcl_normal, joint_normal, offset, coeff, max_bbx_len = data
-        # offset = GFM_.joint2offset(joint_img,img,feature_size=128)
-        # heatmap = offset[:,joint_num*3:,:,:]
-        debug_2d_heatmap(img,joint_img,index,GFM_)
-        # for i in range(img.size(0)):
-        #     # for joint_id in range(joint_num):
-        #         depth = img.numpy()[i]
-        #         # feature = heatmap.numpy()[i,joint_id]
-        #         img_heatmap = ((depth + 1) / 4 ) * 255.0
-        #         color = cv2.cvtColor(np.transpose(img_heatmap, (1, 2, 0)), cv2.COLOR_GRAY2RGB)
-        #         # color[:, :, 1] = 255
-        #         img_name_1 = './debug/3dheatmap/' + str(index) + '_' + str(i) + '.png'
-        #         cv2.imwrite(img_name_1, color)
-
-        # joint = GFM_.offset2joint(offset,img)
-        # print(index,(joint_img-joint).sum())
-        # debug_offset(data,index,GFM_)
-        print(index)
 

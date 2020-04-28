@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 import scipy.io as sio
-import torch
 from glob import glob
 
 from dataloader.loader import Loader
