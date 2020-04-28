@@ -6,8 +6,6 @@ from glob import glob
 
 from dataloader.loader import Loader
 from util.util import uvd2xyz, xyz2uvd
-from util.eval_tool import EvalUtil
-from util.vis_tool import VisualUtil
 
 JOINT = np.array([0,1,3,5,   6,7,9,11,  12,13,15,17,  18,19,21,23,  24,25,27,28,  32,30,31])
 # select 14 joints for evaluation 
@@ -52,13 +50,7 @@ class NYU(Loader):
         jt_xyz -= center_xyz
         img, M = self.crop(img, center_uvd, cube, self.dsize)
 
-        if self.phase == 'train' and self.val == False:
-            aug_op, trans, scale, rot = self.random_aug(*self.aug_para)
-            # print(aug_op)
-            img, jt_xyz, cube, center_uvd, M = self.augment(img, jt_xyz, center_uvd, cube, M, aug_op, trans, scale, rot)
-            center_xyz = uvd2xyz(center_uvd, self.paras, self.flip)
-        else:
-            img = self.normalize(img.max(), img, center_xyz, cube)
+        img = self.normalize(img.max(), img, center_xyz, cube)
 
         jt_uvd = self.transform_jt_uvd(xyz2uvd(jt_xyz + center_xyz, self.paras, self.flip), M)
         jt_uvd[:, :2] = jt_uvd[:, :2] / (self.img_size / 2.) - 1
@@ -75,7 +67,6 @@ class NYU(Loader):
         img = cv2.imread(img_path)
         depth = np.asarray(img[:,:,0] + img[:, :, 1] * 256, dtype=np.float32)
         return depth
-
 
     def make_dataset(self):
         assert self.phase in ['train', 'test']
@@ -97,51 +88,4 @@ class NYU(Loader):
             return [x for index, x in enumerate(item) if index % 10 == 0]
         else:
             return [x for index, x in enumerate(item) if index % 10 != 0]
-        # return item
-
-        
-
-if __name__ == "__main__":
-    def draw(img, pts):
-        img_ = img.copy()
-        pts_ = pts.copy()
-        pts_ = pts_.astype(np.int16)
-        for pt in pts_:
-            # print(pt)
-            cv2.circle(img_, (pt[0],pt[1]), 1, (255,255,255), -1)
-        return img_
-
-    from torch.utils.data import DataLoader
-    from util.eval_tool import EvalUtil
-
-    root = 'D:\\Documents\\Data\\nyu'
-    dataset = NYU(root, phase='train', val=True)
-    evaltool = EvalUtil(dataset.img_size, dataset.paras, dataset.flip, dataset.jt_num)
-    vistool = VisualUtil(dataset.name, )
-
-    dataset = iter(dataset)
-    for i in range(1, 20):
-        data = next(dataset) # 'trans'
-        img, jt_xyz, jt_uvd, center_xyz, M, cube = data
-        print(img.dtype, img.shape)
-        print(jt_xyz.dtype, jt_xyz.shape)
-        print(jt_uvd.dtype, jt_uvd.shape)
-        print(center_xyz.dtype, center_xyz.shape)
-        print(M.dtype, M.shape)
-        print(cube.dtype, cube.shape)
-
-        jt_uvd = (jt_uvd + 1) * 64
-        # a = draw(img[0], jt_uvd[:,:2])
-        # # a = img[0].numpy()
-        # cv2.imwrite("../debug/test_%d.png" % i, (a+1)*100)
-        # print(True)
-
-        # evaltool.feed(jt_uvd, jt_xyz, center_xyz, M, cube)
-        vistool.plot(img, '../debug/save%d.png' % i, jt_uvd, jt_uvd)
-
-    # print(evaltool.get_measures())
-
-    print('done')
-
-
 

@@ -8,11 +8,10 @@ JOINT = {
 class Config(object):
     gpu_id = 0
     data_dir = 'D:\\Documents\\Data'
-    dataset = 'nyu' # ['nyu', 'icvl', 'msra', 'hands17']
+    dataset = 'nyu'
     output_dir = './output/'
     load_model = ''
 
-    test_id = 8 # for msra
     jt_num = JOINT[dataset]
     cube = [250, 250, 250]
     augment_para = [10, 0.1, 180]
