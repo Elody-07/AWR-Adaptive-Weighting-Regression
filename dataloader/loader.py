@@ -7,13 +7,12 @@ from util.util import uvd2xyz, xyz2uvd
 
 class Loader(Dataset):
 
-    def __init__(self, root, phase, img_size, center_type, dataset_name):
+    def __init__(self, root, phase, img_size, dataset_name):
         assert phase in ['train', 'test']
         self.seed = np.random.RandomState(23455)
         self.root = root 
         self.phase = phase
         self.img_size = img_size
-        self.center_type = center_type
         self.dataset_name = dataset_name
         # randomly choose one of the augment options
         self.aug_ops = ['trans', 'scale', 'rot', None]

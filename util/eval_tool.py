@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import os
 from util.util import uvd2xyz
 
 class EvalUtil:
@@ -13,6 +12,8 @@ class EvalUtil:
         self.paras = paras
         self.flip = flip
         self.num_kp = num_kp
+        self.jt_uvd_pred = []
+        self.diff = []
         for _ in range(num_kp):
             self.data.append(list())
 
@@ -38,6 +39,7 @@ class EvalUtil:
         jt_uvd_pred[:, 2] = jt_uvd_pred[:, 2] * cube[2] / 2. + center_xyz[2]
         jt_uvd_trans = np.hstack([jt_uvd_pred[:, :2], np.ones((jt_uvd_pred.shape[0], 1))])
         jt_uvd_pred[:, :2] = np.dot(M_inv, jt_uvd_trans.T).T[:, :2]
+        self.jt_uvd_pred.append(jt_uvd_pred)
         jt_xyz_pred = uvd2xyz(jt_uvd_pred, self.paras, self.flip)
 
         jt_xyz_gt = jt_xyz_gt * (cube / 2.) + center_xyz
@@ -45,6 +47,7 @@ class EvalUtil:
         # calc euclidean distance
         diff = jt_xyz_gt - jt_xyz_pred
         euclidean_dist = np.sqrt(np.sum(np.square(diff), axis=1))
+        self.diff.append(diff.mean(axis=0))
 
         num_kp = jt_xyz_gt.shape[0]
         for i in range(num_kp):
@@ -53,6 +56,7 @@ class EvalUtil:
             else:
                 if jt_vis[i]:
                     self.data[i].append(euclidean_dist[i])
+
 
     def _get_pck(self, kp_id, threshold):
         """ Returns pck for one keypoint for the given threshold. """
@@ -117,7 +121,7 @@ class EvalUtil:
         pck_curve_all = np.mean(np.array(pck_curve_all), 0)  # mean only over keypoints
         return epe_mean_all, epe_median_all, auc_all, pck_curve_all, thresholds
 
-    def plot_pck(self, path, epoch, pck_curve_all, thresholds):
+    def plot_pck(self, path, pck_curve_all, thresholds):
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.plot(thresholds, pck_curve_all * 100, '-*', label='model')
@@ -127,6 +131,6 @@ class EvalUtil:
         plt.grid()
         plt.legend(loc='lower right')
         # plt.tight_layout(rect=(0.01, -0.05, 1.03, 1.03))
-        plt.savefig(os.path.join(path, 'PCK_curve_epoch' + str(epoch) + '.png'))
+        plt.savefig(path)
         plt.close()
 
