@@ -6,7 +6,7 @@ JOINT = {
 }
 class Config(object):
     gpu_id = 0
-    data_dir = 'D:\\Documents\\Data'
+    data_dir = './data'
     dataset = 'nyu'
     output_dir = './output/'
     load_model = ''

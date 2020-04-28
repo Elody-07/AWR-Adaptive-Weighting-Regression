@@ -1,0 +1,7 @@
+torch == 1.4.0
+numpy
+cv2
+matplotlib
+tqdm
+scipy
+
