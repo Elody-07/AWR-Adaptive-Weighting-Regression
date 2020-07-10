@@ -20,8 +20,8 @@ class FeatureModule:
         img = F.interpolate(img, size = [feature_size, feature_size])
         jt_ft = jt_uvd.view(batch_size, -1, 1, 1).repeat(1, 1, feature_size, feature_size) # (B, joint_num*3, F, F)
 
-        mesh_x = 2.0 * (torch.arange(feature_size).unsqueeze(0).expand(feature_size, feature_size).float() + 0.5) / (feature_size - 1.0) - 1.0
-        mesh_y = 2.0 * (torch.arange(feature_size).unsqueeze(1).expand(feature_size, feature_size).float() + 0.5) / (feature_size - 1.0) - 1.0
+        mesh_x = 2.0 * (torch.arange(feature_size).unsqueeze(0).expand(feature_size, feature_size).float() + 0.5) / feature_size - 1.0
+        mesh_y = 2.0 * (torch.arange(feature_size).unsqueeze(1).expand(feature_size, feature_size).float() + 0.5) / feature_size - 1.0
         coords = torch.stack((mesh_x, mesh_y), dim=0)
         coords = coords.unsqueeze(0).repeat(batch_size, 1, 1, 1).to(jt_uvd.device) # (B, 2, F, F)
         coords = torch.cat((coords, img), dim=1).repeat(1, jt_num, 1, 1) # (B, jt_num*3, F, F)
@@ -47,8 +47,8 @@ class FeatureModule:
         # closeness heatmap
         offset_ht = offset[:, jt_num*3:].contiguous() # (B, jt_num, F, F)
 
-        mesh_x = 2.0 * (torch.arange(feature_size).unsqueeze(0).expand(feature_size, feature_size).float() + 0.5) / (feature_size - 1.0) - 1.0
-        mesh_y = 2.0 * (torch.arange(feature_size).unsqueeze(1).expand(feature_size, feature_size).float() + 0.5) / (feature_size - 1.0) - 1.0
+        mesh_x = 2.0 * (torch.arange(feature_size).unsqueeze(0).expand(feature_size, feature_size).float() + 0.5) / feature_size - 1.0
+        mesh_y = 2.0 * (torch.arange(feature_size).unsqueeze(1).expand(feature_size, feature_size).float() + 0.5) / feature_size - 1.0
         coords = torch.stack((mesh_x, mesh_y), dim=0)
         coords = coords.unsqueeze(0).repeat(batch_size, 1, 1, 1).to(offset.device)
         coords = torch.cat((coords, img), dim=1).repeat(1, jt_num, 1, 1) # (B, jt_num*3, F, F)

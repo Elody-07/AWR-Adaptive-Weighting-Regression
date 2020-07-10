@@ -115,7 +115,6 @@ class Loader(Dataset):
         return img, jt_xyz, cube, center, M
 
     def normalize(self, depth_max, img, center, cube):
-        cv2.imwrite('before_norm.png', img)
         img[img == depth_max] = center[2] + (cube[2] / 2.)
         # invalid points are assigned as bg
         img[img == 0] = center[2] + (cube[2] / 2.)

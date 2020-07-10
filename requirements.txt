@@ -1,6 +1,6 @@
 torch == 1.1.0
 numpy
-cv2
+opencv-python
 matplotlib
 tqdm
 scipy
