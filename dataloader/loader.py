@@ -2,6 +2,7 @@ from torch.utils.data import Dataset
 import numpy as np
 import cv2
 from util.util import uvd2xyz, xyz2uvd
+from scipy.sparse import coo_matrix
 
 class Loader(Dataset):
 
@@ -14,7 +15,36 @@ class Loader(Dataset):
         self.dataset_name = dataset_name
         # randomly choose one of the augment options
         self.aug_ops = ['trans', 'scale', 'rot', None]
-    
+
+    def jt2dc(self, jt_xyz, nChannels, min_range, maxrange):
+
+        h, w = jt_xyz.shape[-2:]
+        step = (maxrange - min_range) / nChannels
+        jt_xyz_clp = np.clip(jt_xyz, min_range, maxrange)
+
+        jt_xyz_flat = jt_xyz_clp.reshape(-1) / step
+        jt_xyz_rnd = np.round(jt_xyz_flat)
+        delta = jt_xyz_flat - jt_xyz_rnd
+
+        bin_idx = (jt_xyz_rnd + 1 + abs(min_range / step)).astype(np.int32)
+        keep = np.where((bin_idx >= 1) & (bin_idx <= nChannels + 1))
+        bin_idx = bin_idx[keep]
+        delta = delta[keep]
+
+        vals = np.hstack([(.5 - delta) / 2.,
+                          0.5 * np.ones_like(delta),
+                          (.5 + delta) / 2.])
+
+        keep = np.array(keep).reshape(-1)
+        coord_pic = np.hstack([keep, keep, keep]).astype(np.int32)  # (N,)
+        coord_bin = np.hstack([bin_idx - 1, bin_idx, bin_idx + 1]).astype(np.int32)  # (N,)
+        coord = np.stack([coord_pic, coord_bin], axis=0)  # (2, N)
+
+        dc = coo_matrix((vals, coord), shape=(h * w, nChannels + 3)).toarray()
+        dc = dc.reshape(h, w, nChannels + 3).astype(np.float32)
+
+        return dc.transpose(2, 0, 1)
+
     def crop(self, img, center, csize, dsize):
         '''
         Crop hand region out of depth images, scales inverse to the distance of hand to camers
@@ -85,14 +115,16 @@ class Loader(Dataset):
         return img, jt_xyz, cube, center, M
 
     def normalize(self, depth_max, img, center, cube):
+        cv2.imwrite('before_norm.png', img)
         img[img == depth_max] = center[2] + (cube[2] / 2.)
         # invalid points are assigned as bg
         img[img == 0] = center[2] + (cube[2] / 2.)
 
-        img_min = center[2] - (cube[2] / 2.)
+        img_min = center[2] - (cube[2] / 2.) # foreground, normalise to -1, should not be to much
         img_max = center[2] + (cube[2] / 2.)
         img = np.clip(img, img_min, img_max)
-        # scale depth values to [-1, 1]
+        # print('sum:', (img==img_min).sum())
+        # scale depth 'sum:', values to [-1, 1]
         img -= center[2]
         img /= (cube[2] / 2.)
 
@@ -113,7 +145,8 @@ class Loader(Dataset):
 
         if not (np.allclose(center[2], 0.)) or np.allclose(new_center[2], 0.):
             new_M = self.center2transmat(new_center, cube, np.array(img.shape))
-            img = self.recrop(img, new_center, cube, new_M, np.linalg.inv(M), img.shape, thresh_z=True, bg=pad_value, nv_val=32000.)
+            # print(img[img>0].min()-1)
+            img = self.recrop(img, new_center, cube, new_M, np.linalg.inv(M), img.shape, thresh_z=True, bg=pad_value, nv_val=np.min(img[img>0])-1)
         else:
             new_M = M
         
@@ -124,7 +157,8 @@ class Loader(Dataset):
     def recrop(self, img, center, cube, M, M_inv, dsize, thresh_z=True, bg=0., nv_val=0.):
         img = cv2.warpPerspective(img, np.dot(M, M_inv), dsize, flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=float(bg))
 
-        img[np.isclose(img, nv_val)] = bg
+        # img[np.isclose(img, 32000.)] = bg # outliers will appear on the edge
+        img[img < nv_val] = bg # let 0 < depth < depth.min()-1 be background, avoiding outliers around hand
 
         if thresh_z:
             _, _, _, _, zstart, zend = self.center2bounds(center, cube)
@@ -169,7 +203,7 @@ class Loader(Dataset):
         
         if not np.allclose(center[2], 0.):
             new_M = self.center2transmat(center, new_cube, np.array(img.shape))
-            img = self.recrop(img, center, new_cube, new_M, np.linalg.inv(M), img.shape, bg=pad_value, nv_val=32000.)
+            img = self.recrop(img, center, new_cube, new_M, np.linalg.inv(M), img.shape, bg=pad_value, nv_val=np.min(img[img>0])-1)
             # new_img = self.recrop(img, center, cube, new_M, np.linalg.inv(M), img.shape, bg=pad_value, nv_val=32000.)
         else:
             new_M = M
@@ -233,10 +267,9 @@ class Loader(Dataset):
         scale[2][2] = 1
 
         # pad another side to corresponding dsize
-        ustart, vstart = (dsize - size) / 2.
         trans2 = np.eye(3)
-        trans2[0][2] = int(ustart)
-        trans2[1][2] = int(vstart)
+        trans2[0][2] = int(np.floor(dsize[0] / 2. - size[0] / 2.))
+        trans2[1][2] = int(np.floor(dsize[1] / 2. - size[1] / 2.))
 
         return np.dot(trans2, np.dot(scale, trans1)).astype(np.float32)
 

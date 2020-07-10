@@ -2,6 +2,7 @@ import math
 import torch
 import torch.nn as nn
 
+
 BN_MOMENTUM = 0.1
 
 def get_deconv_net(layers, num_classes, downsample):
@@ -36,6 +37,7 @@ class ResnetDeconv(nn.Module):
 
         self.inplanes = 64
         self.layer1 = self._make_layer(block, 64, layers[0])
+
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
@@ -46,7 +48,10 @@ class ResnetDeconv(nn.Module):
         self.deconv_with_bias = False
         self.deconv_layers = self._make_deconv_layer(deconv_num, deconv_kernel, deconv_planes)
 
-        self.final = nn.Conv2d(in_channels=256, out_channels=outchannels, kernel_size=1, stride=1, padding=0)
+        # self.final1 = nn.Conv2d(in_channels=256, out_channels=outchannels*2, kernel_size=1, stride=1, padding=0)
+        self.final1 = nn.Conv2d(in_channels=256, out_channels=outchannels*3, kernel_size=1, stride=1, padding=0)
+        self.final2 = nn.Conv2d(in_channels=256, out_channels=outchannels, kernel_size=1, stride=1, padding=0)
+        self.init_weights()
 
     def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
@@ -95,26 +100,26 @@ class ResnetDeconv(nn.Module):
                 m.bias.data.zero_()
             elif isinstance(m, nn.Linear):
                 m.weight.data.normal_(0, 0.001)
-                # m.bias.data.zero_()
-        for name, m in self.deconv_layers.named_modules():
-            if isinstance(m, nn.ConvTranspose2d):
+            elif isinstance(m, nn.ConvTranspose2d):
                 nn.init.normal_(m.weight, std=0.001)
                 if self.deconv_with_bias:
                     nn.init.constant_(m.bias, 0)
-            elif isinstance(m, nn.BatchNorm2d):
-                nn.init.constant_(m.weight, 1)
+
+        for m in self.final1.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.normal_(m.weight, std=0.001)
                 nn.init.constant_(m.bias, 0)
-        for m in self.final.modules():
+        for m in self.final2.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.normal_(m.weight, std=0.001)
                 nn.init.constant_(m.bias, 0)
 
 
     def forward(self, x):
-        x = self.pre(x)
+        c = self.pre(x)
         # print('pre size: ', x.size())
 
-        c1 = self.layer1(x)
+        c1 = self.layer1(c)
         # print('enc1 size: ', c1.size())
         c2 = self.layer2(c1)
         # print('enc2 size: ', c2.size())
@@ -123,11 +128,12 @@ class ResnetDeconv(nn.Module):
         c4 = self.layer4(c3)
         # print('enc4 size: ', c4.size())
 
-        x = self.deconv_layers(c4)
+        out = self.deconv_layers(c4)
         # print('deconv size: ', x.size())
-        x = self.final(x)
+        vec = self.final1(out)
+        ht = self.final2(out)
 
-        return x
+        return torch.cat([vec, ht], dim=1)
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -207,3 +213,20 @@ class Bottleneck(nn.Module):
         out = self.relu(out)
 
         return out
+
+
+
+if __name__ == '__main__':
+    from ptflops import get_model_complexity_info
+    import os
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = '3'
+
+    img = torch.randn(1, 1, 128, 128).cuda()
+    model = get_deconv_net(18, 14, 2).cuda()
+    print(model)
+    out = model(img)
+    print(out.size())
+    macs, params = get_model_complexity_info(model, (1,128,128),as_strings=True,print_per_layer_stat=False)
+    print(macs)
+    print(params)

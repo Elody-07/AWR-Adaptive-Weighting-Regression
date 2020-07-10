@@ -29,6 +29,8 @@ We provide result on [NYU dataset](https://jonathantompson.github.io/NYU_Hand_Po
 4. Modify `./config.py` according to your setting.
 5. Run code `python test.py`
 
+New: We provide HourGlass network and a pretrained model on HourGlass-1stage. You can set `load_model='./results/hourglass_1.pth'` to run the code.
+
 ### Citation
 
 If you find our work useful in your research, please citing:

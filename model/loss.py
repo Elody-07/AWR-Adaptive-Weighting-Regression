@@ -13,10 +13,10 @@ class My_SmoothL1Loss(torch.nn.Module):
         l1_mask = (torch.abs(z) >= 0.01).float()
         mse = mse_mask * z
         l1 = l1_mask * z
-        total_loss += torch.sum(self._calculate_MSE(mse)*mse_mask)
-        total_loss += torch.sum(self._calculate_L1(l1)*l1_mask)
+        total_loss += torch.mean(self._calculate_MSE(mse)*mse_mask)
+        total_loss += torch.mean(self._calculate_L1(l1)*l1_mask)
 
-        return total_loss/z.shape[0]
+        return total_loss
 
     def _calculate_MSE(self, z):
         return 0.5 *(torch.pow(z,2))
