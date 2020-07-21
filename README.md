@@ -1,5 +1,7 @@
 ## AWR: Adaptive Weighting Regression for 3D Hand Pose Estimation
 
+New: An update version of paper is [here](https://arxiv.org/abs/2007.09590). We re-compute the params and FLOPs of each network structure, mainly on Hourglass and update the results accordingly.
+
 This is the official repository for AAAI 2020 paper [AWR: Adaptive Weighting Regression for 3D Hand Pose Estimation](https://www.aaai.org//Papers//AAAI//2020GB//AAAI-HuangW.4059.pdf). by Weiting Huang\*, Pengfei Ren\*, Jingyu Wang, Qi Qi, Haifeng Sun  (* denotes equal contribution)
 
 Codes are implemented with Python 3.7.0 and Pytorch 1.4.0.
@@ -13,13 +15,9 @@ We propose an adaptive weighting regression (AWR) method to leverage the advanta
 ![](https://cdn.jsdelivr.net/gh/Elody-07/PicBed/20200428164654.png)
 
 <div align=center> Fig 1. Main idea of AWR.</div>
-
-
 ![](https://cdn.jsdelivr.net/gh/Elody-07/PicBed/20200428164723.png)
 
 <div align=center> Fig 2. Framework of AWR</div>
-
-
 ### Code Setup
 
 We provide result on [NYU dataset](https://jonathantompson.github.io/NYU_Hand_Pose_Dataset.htm) with Resnet18 (`resnet_18_uvd.txt`) and inferencing code. 
