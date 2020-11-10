@@ -15,9 +15,11 @@ We propose an adaptive weighting regression (AWR) method to leverage the advanta
 ![](https://cdn.jsdelivr.net/gh/Elody-07/PicBed/20200428164654.png)
 
 <div align=center> Fig 1. Main idea of AWR.</div>
+
 ![](https://cdn.jsdelivr.net/gh/Elody-07/PicBed/20200428164723.png)
 
 <div align=center> Fig 2. Framework of AWR</div>
+
 ### Code Setup
 
 We provide result on [NYU dataset](https://jonathantompson.github.io/NYU_Hand_Pose_Dataset.htm) with Resnet18 (`resnet_18_uvd.txt`) and inferencing code. 
