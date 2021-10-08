@@ -50,12 +50,17 @@ class NYU(Loader):
         jt_xyz -= center_xyz
         img, M = self.crop(img, center_uvd, cube, self.dsize)
 
-        img = self.normalize(img.max(), img, center_xyz, cube)
+        if self.phase == 'train' and self.val == False:
+            aug_op, trans, scale, rot = self.random_aug(*self.aug_para)
+            img, jt_xyz, cube, center_uvd, M = self.augment(img, jt_xyz, center_uvd, cube, M, aug_op, trans, scale, rot)
+            center_xyz = uvd2xyz(center_uvd, self.paras, self.flip)
+        else:
+            img = self.normalize(img.max(), img, center_xyz, cube)
+
 
         jt_uvd = self.transform_jt_uvd(xyz2uvd(jt_xyz + center_xyz, self.paras, self.flip), M)
         jt_uvd[:, :2] = jt_uvd[:, :2] / (self.img_size / 2.) - 1
         jt_uvd[:, 2] = (jt_uvd[:, 2] - center_xyz[2]) / (cube[2] / 2.0)
-
         jt_xyz = jt_xyz / (cube / 2.)
 
         return img[np.newaxis, :].astype(np.float32), jt_xyz.astype(np.float32), jt_uvd.astype(np.float32), center_xyz.astype(np.float32), M.astype(np.float32), cube.astype(np.float32)

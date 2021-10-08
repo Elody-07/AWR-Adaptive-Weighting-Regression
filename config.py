@@ -6,7 +6,9 @@ JOINT = {
 }
 class Config(object):
     gpu_id = 0
-    data_dir = 'D:\\Documents\\Data'
+    exp_id = "nyu_hourglass"
+    log_id = ""
+    data_dir = './data'
     dataset = 'nyu'
     output_dir = './output/'
     load_model = './results/hourglass_1.pth'
@@ -18,16 +20,17 @@ class Config(object):
     net = 'hourglass_1' # 'resnet_18'
     downsample = 2 # [1,2,4]
     img_size = 128
-    batch_size = 16
-    num_workers = 0
-    max_epoch = 80
+    batch_size = 32
+    num_workers = 8
+    max_epoch = 40
     loss_type = 'MyL1Loss'
     dense_weight = 1.
-    coord_weight = 1000.0
-    kernel_size = 0.4   # for offset
+    coord_weight = 0
+    kernel_size = 1   # for offset
     lr = 0.001
-    print_freq = 30
-    vis_freq = 10
+    weight_decay = 0
+    print_freq = 100
+    vis_freq = 500
 
 
 opt = Config()
